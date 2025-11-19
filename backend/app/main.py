@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import ValidationError
+from app.models import TimezoneSettings
+from app.crud import get_timezone_setting, update_timezone_setting
 
 app = FastAPI(title="Shift Manager API")
 
@@ -15,3 +18,18 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/settings/timezone")
+def get_timezone():
+    timezone = get_timezone_setting()
+    return {"timezone": timezone}
+
+
+@app.put("/settings/timezone")
+def put_timezone(settings: TimezoneSettings):
+    try:
+        timezone = update_timezone_setting(settings.timezone)
+        return {"timezone": timezone}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
