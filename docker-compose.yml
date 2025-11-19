@@ -22,7 +22,8 @@ services:
       dockerfile: Dockerfile
     container_name: shift-backend
     volumes:
-      - ./backend/app:/app/app  # live reload during dev
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
     ports:
       - "8000:8000"
     environment:
