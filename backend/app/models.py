@@ -1,9 +1,13 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from zoneinfo import ZoneInfo, available_timezones
 
 
 class TimezoneSettings(BaseModel):
-    timezone: str
+    timezone: str = Field(
+        ...,
+        description="IANA timezone name (e.g., 'America/New_York', 'Europe/London')",
+        examples=["America/New_York", "Europe/London", "Asia/Tokyo"]
+    )
 
     @field_validator("timezone")
     @classmethod
@@ -20,12 +24,16 @@ class TimezoneSettings(BaseModel):
 
 
 class Worker(BaseModel):
-    id: int
-    name: str
+    id: int = Field(..., description="Unique identifier for the worker", examples=[1])
+    name: str = Field(..., description="Worker's full name", examples=["John Doe"])
 
 
 class WorkerCreate(BaseModel):
-    name: str
+    name: str = Field(
+        ...,
+        description="Worker's full name",
+        examples=["John Doe", "Jane Smith"]
+    )
 
     @field_validator("name")
     @classmethod
@@ -36,7 +44,11 @@ class WorkerCreate(BaseModel):
 
 
 class WorkerUpdate(BaseModel):
-    name: str
+    name: str = Field(
+        ...,
+        description="Updated worker's full name",
+        examples=["John Doe Updated", "Jane Smith Updated"]
+    )
 
     @field_validator("name")
     @classmethod
