@@ -1,15 +1,18 @@
+import os
 from typing import List
 from fastapi import FastAPI, HTTPException, Response, status
 from pydantic import ValidationError
 from app.models import TimezoneSettings, Worker, WorkerCreate, WorkerUpdate
 from app.crud import get_timezone_setting, update_timezone_setting, list_workers, create_worker, get_worker, update_worker, delete_worker
 
+ENV = os.getenv("ENV", "development")
+
 app = FastAPI(
     title="Shift Manager API",
     version="0.1.0",
     description="API for managing workers and shift scheduling with timezone support",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if ENV != "production" else None,
+    redoc_url="/redoc" if ENV != "production" else None,
 )
 
 
