@@ -17,3 +17,30 @@ class TimezoneSettings(BaseModel):
         except Exception:
             raise ValueError(f"Invalid timezone: {v}")
         return v
+
+
+class Worker(BaseModel):
+    id: int
+    name: str
+
+
+class WorkerCreate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Name cannot be empty")
+        return v
+
+
+class WorkerUpdate(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Name cannot be empty")
+        return v
