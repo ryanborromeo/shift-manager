@@ -118,3 +118,80 @@ def test_delete_worker_nonexistent(mock_delete_worker):
     assert response.status_code == 404
     assert "detail" in response.json()
     assert response.json()["detail"] == "Worker not found"
+
+
+@patch("app.main.get_worker")
+def test_get_worker_negative_id(mock_get_worker):
+    mock_get_worker.return_value = None
+    response = client.get("/workers/-1")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Worker not found"
+
+
+@patch("app.main.get_worker")
+def test_get_worker_zero_id(mock_get_worker):
+    mock_get_worker.return_value = None
+    response = client.get("/workers/0")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Worker not found"
+
+
+@patch("app.main.get_worker")
+def test_get_worker_very_large_id(mock_get_worker):
+    mock_get_worker.return_value = None
+    response = client.get("/workers/9999999999999999999")
+    assert response.status_code == 404
+
+
+def test_get_worker_non_integer_id():
+    response = client.get("/workers/abc")
+    assert response.status_code == 422
+
+
+@patch("app.main.create_worker")
+def test_post_worker_special_characters(mock_create_worker):
+    mock_create_worker.return_value = {"id": 1, "name": "John O'Brien & Co."}
+    response = client.post("/workers", json={"name": "John O'Brien & Co."})
+    assert response.status_code == 201
+    assert response.json() == {"id": 1, "name": "John O'Brien & Co."}
+
+
+@patch("app.main.create_worker")
+def test_post_worker_unicode_characters(mock_create_worker):
+    mock_create_worker.return_value = {"id": 1, "name": "José García 李明"}
+    response = client.post("/workers", json={"name": "José García 李明"})
+    assert response.status_code == 201
+    assert response.json() == {"id": 1, "name": "José García 李明"}
+
+
+@patch("app.main.create_worker")
+def test_post_worker_extremely_long_name(mock_create_worker):
+    long_name = "A" * 1001
+    mock_create_worker.return_value = {"id": 1, "name": long_name}
+    response = client.post("/workers", json={"name": long_name})
+    assert response.status_code == 201
+    assert response.json()["name"] == long_name
+
+
+def test_post_worker_null_value():
+    response = client.post("/workers", json={"name": None})
+    assert response.status_code == 422
+
+
+def test_post_worker_numeric_name():
+    response = client.post("/workers", json={"name": 12345})
+    assert response.status_code == 422
+
+
+@patch("app.main.update_worker")
+def test_put_worker_negative_id(mock_update_worker):
+    mock_update_worker.return_value = None
+    response = client.put("/workers/-1", json={"name": "John Doe"})
+    assert response.status_code == 404
+
+
+@patch("app.main.delete_worker")
+def test_delete_worker_negative_id(mock_delete_worker):
+    mock_delete_worker.return_value = None
+    response = client.delete("/workers/-1")
+    assert response.status_code == 404

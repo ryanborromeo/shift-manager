@@ -58,3 +58,35 @@ def test_put_timezone_invalid_formats():
     for tz in invalid_timezones:
         response = client.put("/settings/timezone", json={"timezone": tz})
         assert response.status_code == 422, f"Failed for timezone '{tz}': {response.status_code} - {response.json()}"
+
+
+def test_put_timezone_empty_string():
+    response = client.put("/settings/timezone", json={"timezone": ""})
+    assert response.status_code == 422
+
+
+def test_put_timezone_null_value():
+    response = client.put("/settings/timezone", json={"timezone": None})
+    assert response.status_code == 422
+
+
+def test_put_timezone_numeric_value():
+    response = client.put("/settings/timezone", json={"timezone": 12345})
+    assert response.status_code == 422
+
+
+def test_put_timezone_very_long_string():
+    long_string = "A" * 1000
+    response = client.put("/settings/timezone", json={"timezone": long_string})
+    assert response.status_code == 422
+
+
+def test_put_timezone_special_characters():
+    response = client.put("/settings/timezone", json={"timezone": "America/New_York!@#$"})
+    assert response.status_code == 422
+
+
+@patch("app.crud.put_entity")
+def test_put_timezone_case_variations(mock_put_entity):
+    response = client.put("/settings/timezone", json={"timezone": "america/new_york"})
+    assert response.status_code == 422
