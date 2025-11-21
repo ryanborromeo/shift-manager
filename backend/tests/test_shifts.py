@@ -295,3 +295,205 @@ def test_duration_computation_accuracy():
     )
     
     assert shift_half.duration_hours == 4.5
+
+
+@patch("app.main.get_shift")
+def test_get_shift_negative_id(mock_get_shift):
+    mock_get_shift.return_value = None
+    response = client.get("/shifts/-1")
+    assert response.status_code == 404
+
+
+def test_get_shift_non_integer_id():
+    response = client.get("/shifts/abc")
+    assert response.status_code == 422
+
+
+@patch("app.main.create_shift")
+def test_post_shift_negative_worker_id(mock_create_shift):
+    mock_create_shift.side_effect = ValueError("Worker not found")
+    response = client.post("/shifts", json={
+        "worker_id": -1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 400
+
+
+@patch("app.main.create_shift")
+def test_post_shift_zero_worker_id(mock_create_shift):
+    mock_create_shift.side_effect = ValueError("Worker not found")
+    response = client.post("/shifts", json={
+        "worker_id": 0,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 400
+
+
+@patch("app.main.create_shift")
+def test_post_shift_exact_12_hour_duration(mock_create_shift):
+    mock_create_shift.return_value = {
+        "id": 1,
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T21:00:00-05:00"
+    }
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T21:00:00-05:00"
+    })
+    assert response.status_code == 201
+
+
+def test_post_shift_just_over_12_hour_duration():
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T21:00:01-05:00"
+    })
+    assert response.status_code == 422
+
+
+@patch("app.main.create_shift")
+def test_post_shift_far_future(mock_create_shift):
+    mock_create_shift.return_value = {
+        "id": 1,
+        "worker_id": 1,
+        "start": "2100-01-01T09:00:00-05:00",
+        "end": "2100-01-01T17:00:00-05:00"
+    }
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2100-01-01T09:00:00-05:00",
+        "end": "2100-01-01T17:00:00-05:00"
+    })
+    assert response.status_code == 201
+
+
+@patch("app.main.create_shift")
+def test_post_shift_far_past(mock_create_shift):
+    mock_create_shift.return_value = {
+        "id": 1,
+        "worker_id": 1,
+        "start": "1900-01-01T09:00:00-05:00",
+        "end": "1900-01-01T17:00:00-05:00"
+    }
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "1900-01-01T09:00:00-05:00",
+        "end": "1900-01-01T17:00:00-05:00"
+    })
+    assert response.status_code == 201
+
+
+@patch("app.main.create_shift")
+def test_post_shift_dst_transition(mock_create_shift):
+    mock_create_shift.return_value = {
+        "id": 1,
+        "worker_id": 1,
+        "start": "2024-03-10T01:00:00-05:00",
+        "end": "2024-03-10T09:00:00-04:00"
+    }
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-03-10T01:00:00-05:00",
+        "end": "2024-03-10T09:00:00-04:00"
+    })
+    assert response.status_code == 201
+
+
+def test_post_shift_malformed_datetime():
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "not-a-date",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 422
+
+
+@patch("app.main.create_shift")
+def test_post_shift_timezone_naive(mock_create_shift):
+    mock_create_shift.return_value = {
+        "id": 1,
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00Z",
+        "end": "2024-02-10T17:00:00Z"
+    }
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00Z",
+        "end": "2024-02-10T17:00:00Z"
+    })
+    assert response.status_code == 201
+
+
+def test_post_shift_null_start():
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": None,
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 422
+
+
+def test_post_shift_null_end():
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": None
+    })
+    assert response.status_code == 422
+
+
+def test_post_shift_zero_duration():
+    response = client.post("/shifts", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T09:00:00-05:00"
+    })
+    assert response.status_code == 422
+
+
+def test_post_shift_missing_worker_id():
+    response = client.post("/shifts", json={
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 422
+
+
+@patch("app.main.update_shift")
+def test_put_shift_negative_id(mock_update_shift):
+    mock_update_shift.return_value = None
+    response = client.put("/shifts/-1", json={
+        "worker_id": 1,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 404
+
+
+@patch("app.main.update_shift")
+def test_put_shift_change_worker(mock_update_shift):
+    mock_update_shift.return_value = {
+        "id": 1,
+        "worker_id": 2,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    }
+    response = client.put("/shifts/1", json={
+        "worker_id": 2,
+        "start": "2024-02-10T09:00:00-05:00",
+        "end": "2024-02-10T17:00:00-05:00"
+    })
+    assert response.status_code == 200
+    assert response.json()["worker_id"] == 2
+
+
+@patch("app.main.delete_shift")
+def test_delete_shift_negative_id(mock_delete_shift):
+    mock_delete_shift.return_value = None
+    response = client.delete("/shifts/-1")
+    assert response.status_code == 404
