@@ -65,3 +65,10 @@ def update_entity_by_id(kind: str, entity_id: int, data: dict) -> Optional[Any]:
     entity.update(data)
     client.put(entity)
     return entity
+
+
+def list_entities_by_property(kind: str, property_name: str, property_value: Any) -> List[Any]:
+    client = get_client()
+    query = client.query(kind=kind)
+    query.add_filter(property_name, "=", property_value)
+    return list(query.fetch())
