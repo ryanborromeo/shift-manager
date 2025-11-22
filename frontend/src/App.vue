@@ -1,11 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { Button } from '@/components/ui/button'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div class="p-8">
+    <h1 class="text-3xl font-bold mb-4">Shift Manager</h1>
+    <p class="mb-4">
+      shadcn-vue is successfully configured!
+    </p>
+    <Button>Click me</Button>
+  </div>
 </template>
 
 <style scoped></style>
