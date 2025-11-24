@@ -1,14 +1,34 @@
 <script setup lang="ts">
-import Sidebar from '@/components/Sidebar.vue'
+import { RouterView } from 'vue-router'
+import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 </script>
 
 <template>
-  <div class="flex h-screen">
-    <Sidebar />
-    <main class="flex-1 overflow-auto bg-gray-50">
-      <router-view />
-    </main>
-  </div>
+  <LayoutAuthenticated>
+    <RouterView>
+      <template #default="{ Component, route }">
+        <transition
+          :name="route.meta.transition || 'fade'"
+          mode="out-in"
+        >
+          <component
+            :is="Component"
+            :key="route.path"
+          />
+        </transition>
+      </template>
+    </RouterView>
+  </LayoutAuthenticated>
 </template>
 
-<style scoped></style>
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

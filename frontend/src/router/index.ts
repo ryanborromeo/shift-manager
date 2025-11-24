@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DashboardView from '@/views/DashboardView.vue'
 import WorkersView from '@/views/WorkersView.vue'
 import ShiftsView from '@/views/ShiftsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
@@ -9,23 +8,31 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'dashboard',
-      component: DashboardView
+      redirect: '/workers'
     },
     {
       path: '/workers',
       name: 'workers',
-      component: WorkersView
+      component: WorkersView,
+      meta: {
+        transition: 'fade'
+      }
     },
     {
       path: '/shifts',
       name: 'shifts',
-      component: ShiftsView
+      component: ShiftsView,
+      meta: {
+        transition: 'fade'
+      }
     },
     {
       path: '/settings',
       name: 'settings',
-      component: SettingsView
+      component: SettingsView,
+      meta: {
+        transition: 'fade'
+      }
     }
   ]
 })
