@@ -14,10 +14,11 @@
       >
         <Button
           @click="$router.push(item.path)"
-          :variant="isActive ? 'default' : 'ghost'"
           :class="[
-            'w-full justify-start',
-            isActive ? 'bg-gray-800' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+            'w-full justify-start h-9 px-4 py-2',
+            isActive 
+              ? 'bg-gray-700 text-white' 
+              : 'text-gray-300 hover:text-white hover:bg-gray-800'
           ]"
         >
           <component :is="item.icon" class="mr-3 h-5 w-5" />
