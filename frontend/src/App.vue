@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import Sidebar from '@/components/Sidebar.vue'
 </script>
 
 <template>
-  <div class="p-8">
-    <h1 class="text-3xl font-bold mb-4">Shift Manager</h1>
-    <p class="mb-4">
-      shadcn-vue is successfully configured!
-    </p>
-    <Button>Click me</Button>
+  <div class="flex h-screen">
+    <Sidebar />
+    <main class="flex-1 overflow-auto bg-gray-50">
+      <router-view />
+    </main>
   </div>
 </template>
 
