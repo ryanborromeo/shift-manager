@@ -1,15 +1,34 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import { RouterView } from 'vue-router'
+import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 </script>
 
 <template>
-  <div class="p-8">
-    <h1 class="text-3xl font-bold mb-4">Shift Manager</h1>
-    <p class="mb-4">
-      shadcn-vue is successfully configured!
-    </p>
-    <Button>Click me</Button>
-  </div>
+  <LayoutAuthenticated>
+    <RouterView>
+      <template #default="{ Component, route }">
+        <transition
+          :name="route.meta.transition || 'fade'"
+          mode="out-in"
+        >
+          <component
+            :is="Component"
+            :key="route.path"
+          />
+        </transition>
+      </template>
+    </RouterView>
+  </LayoutAuthenticated>
 </template>
 
-<style scoped></style>
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
