@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import menuAside from '@/menuAside.js'
-import { useDarkModeStore } from '@/stores/darkMode.js'
+import { useDarkModeStore } from '@/stores/darkMode'
 import AsideMenu from '@/components/AsideMenu.vue'
 
 const layoutAsidePadding = 'xl:pl-60'

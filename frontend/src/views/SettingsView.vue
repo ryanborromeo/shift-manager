@@ -1,53 +1,65 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { mdiCog, mdiContentSave, mdiBell, mdiPalette, mdiClock } from '@mdi/js'
+import { ref, onMounted } from 'vue'
+import { mdiCog, mdiContentSave } from '@mdi/js'
 import SectionMain from '@/components/SectionMain.vue'
 import CardBox from '@/components/CardBox.vue'
 import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import BaseIcon from '@/components/BaseIcon.vue'
 import FormField from '@/components/FormField.vue'
 import FormControl from '@/components/FormControl.vue'
-import FormCheckRadio from '@/components/FormCheckRadio.vue'
+import NotificationBar from '@/components/NotificationBar.vue'
+import { useSettingsStore } from '@/stores/settingsStore'
 
-const settings = ref({
-  appName: 'Shift Manager',
-  timezone: 'UTC',
-  dateFormat: 'YYYY-MM-DD',
-  emailNotifications: true,
-  pushNotifications: false,
-  shiftReminders: true,
-  theme: 'light',
-  language: 'en',
-  defaultShiftDuration: 8,
-  breakDuration: 30,
-  overtimeRate: 1.5
-})
+const settingsStore = useSettingsStore()
+const timezone = ref('')
+const isSaving = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
 
+// Common timezone options (IANA timezone names)
 const timezoneOptions = [
   { id: 'UTC', label: 'UTC' },
-  { id: 'EST', label: 'Eastern Time' },
-  { id: 'PST', label: 'Pacific Time' },
-  { id: 'CST', label: 'Central Time' }
+  { id: 'America/New_York', label: 'America/New_York (EST/EDT)' },
+  { id: 'America/Chicago', label: 'America/Chicago (CST/CDT)' },
+  { id: 'America/Denver', label: 'America/Denver (MST/MDT)' },
+  { id: 'America/Los_Angeles', label: 'America/Los_Angeles (PST/PDT)' },
+  { id: 'Europe/London', label: 'Europe/London (GMT/BST)' },
+  { id: 'Europe/Paris', label: 'Europe/Paris (CET/CEST)' },
+  { id: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
+  { id: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
+  { id: 'Australia/Sydney', label: 'Australia/Sydney (AEST/AEDT)' }
 ]
 
-const dateFormatOptions = [
-  { id: 'YYYY-MM-DD', label: '2024-01-15' },
-  { id: 'MM/DD/YYYY', label: '01/15/2024' },
-  { id: 'DD/MM/YYYY', label: '15/01/2024' }
-]
+onMounted(async () => {
+  try {
+    await settingsStore.fetchTimezone()
+    timezone.value = settingsStore.timezone
+  } catch (error) {
+    errorMessage.value = 'Failed to load timezone settings'
+    console.error('Error fetching timezone:', error)
+  }
+})
 
-const themeOptions = [
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'auto', label: 'Auto' }
-]
-
-const languageOptions = [
-  { id: 'en', label: 'English' },
-  { id: 'es', label: 'Spanish' },
-  { id: 'fr', label: 'French' }
-]
+const saveSettings = async () => {
+  isSaving.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+  
+  try {
+    await settingsStore.updateTimezone(timezone.value)
+    successMessage.value = 'Settings saved successfully!'
+    setTimeout(() => {
+      successMessage.value = ''
+    }, 3000)
+  } catch (error: any) {
+    errorMessage.value = error.response?.data?.detail || 'Failed to save settings'
+    setTimeout(() => {
+      errorMessage.value = ''
+    }, 5000)
+  } finally {
+    isSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -58,101 +70,38 @@ const languageOptions = [
         label="Save Changes"
         color="success"
         rounded-full
+        :disabled="isSaving"
+        @click="saveSettings"
       />
     </SectionTitleLineWithButton>
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <CardBox title="General Settings">
-        <FormField label="Application Name">
-          <FormControl
-            v-model="settings.appName"
-            placeholder="Shift Manager"
-          />
-        </FormField>
+    <NotificationBar 
+      v-if="successMessage" 
+      color="success" 
+      :outline="false"
+    >
+      {{ successMessage }}
+    </NotificationBar>
 
-        <FormField label="Timezone">
-          <FormControl
-            v-model="settings.timezone"
-            :options="timezoneOptions"
-          />
-        </FormField>
+    <NotificationBar 
+      v-if="errorMessage" 
+      color="danger" 
+      :outline="false"
+    >
+      {{ errorMessage }}
+    </NotificationBar>
 
-        <FormField label="Date Format">
-          <FormControl
-            v-model="settings.dateFormat"
-            :options="dateFormatOptions"
-          />
-        </FormField>
-      </CardBox>
-
-      <CardBox title="Notification Settings">
-        <FormField label="Email Notifications">
-          <FormCheckRadio
-            v-model="settings.emailNotifications"
-            name="emailNotifications"
-            type="switch"
-          />
-        </FormField>
-
-        <FormField label="Push Notifications">
-          <FormCheckRadio
-            v-model="settings.pushNotifications"
-            name="pushNotifications"
-            type="switch"
-          />
-        </FormField>
-
-        <FormField label="Shift Reminders">
-          <FormCheckRadio
-            v-model="settings.shiftReminders"
-            name="shiftReminders"
-            type="switch"
-          />
-        </FormField>
-      </CardBox>
-
-      <CardBox title="Appearance">
-        <FormField label="Theme">
-          <FormControl
-            v-model="settings.theme"
-            :options="themeOptions"
-          />
-        </FormField>
-
-        <FormField label="Language">
-          <FormControl
-            v-model="settings.language"
-            :options="languageOptions"
-          />
-        </FormField>
-      </CardBox>
-
-      <CardBox title="Shift Settings">
-        <FormField label="Default Shift Duration">
-          <FormControl
-            v-model="settings.defaultShiftDuration"
-            type="number"
-            placeholder="8"
-          />
-        </FormField>
-
-        <FormField label="Break Duration">
-          <FormControl
-            v-model="settings.breakDuration"
-            type="number"
-            placeholder="30"
-          />
-        </FormField>
-
-        <FormField label="Overtime Rate">
-          <FormControl
-            v-model="settings.overtimeRate"
-            type="number"
-            step="0.1"
-            placeholder="1.5"
-          />
-        </FormField>
-      </CardBox>
-    </div>
+    <CardBox title="Timezone Settings" class="mb-6">
+      <FormField 
+        label="Application Timezone"
+        help="Set the timezone for displaying shift times and scheduling"
+      >
+        <FormControl
+          v-model="timezone"
+          :options="timezoneOptions"
+          :disabled="settingsStore.loading"
+        />
+      </FormField>
+    </CardBox>
   </SectionMain>
 </template>

@@ -54,19 +54,19 @@ const getRelativeDate = (dateString: string) => {
 const transactionBarItems = computed(() => {
   return shiftStore.shifts.slice(0, 4).map((shift, index) => {
     const worker = workerStore.workers.find(w => w.id === shift.worker_id)
-    const startTime = new Date(shift.start_time)
-    const endTime = new Date(shift.end_time)
+    const startTime = new Date(shift.start)
+    const endTime = new Date(shift.end)
     const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
     const amount = hours * 25 // Assuming $25/hour rate
     
     return {
       id: shift.id,
       amount: parseFloat(amount.toFixed(2)),
-      date: getRelativeDate(shift.start_time),
+      date: getRelativeDate(shift.start),
       business: `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-      type: new Date(shift.start_time) > new Date() ? 'Scheduled' : 'Completed',
+      type: new Date(shift.start) > new Date() ? 'Scheduled' : 'Completed',
       name: worker ? worker.name : 'Unknown',
-      account: worker ? worker.department : 'N/A'
+      account: 'N/A'
     }
   })
 })

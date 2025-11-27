@@ -18,7 +18,7 @@ export interface Shift {
   worker_id: number;
   start: string;
   end: string;
-  duration_hours: number;
+  duration_hours?: number;
 }
 
 export interface ShiftCreate {
