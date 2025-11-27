@@ -1,6 +1,7 @@
 import os
 from typing import List
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 from app.models import TimezoneSettings, Worker, WorkerCreate, WorkerUpdate, ShiftResponse, ShiftCreate, ShiftUpdate
 from app.crud import (
@@ -17,6 +18,15 @@ app = FastAPI(
     description="API for managing workers and shift scheduling with timezone support",
     docs_url="/docs" if ENV != "production" else None,
     redoc_url="/redoc" if ENV != "production" else None,
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

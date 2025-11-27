@@ -7,7 +7,7 @@ import {
   mdiReload,
   mdiGithub
 } from '@mdi/js'
-import { computed, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import SectionMain from '@/components/SectionMain.vue'
 import CardBoxWidget from '@/components/CardBoxWidget.vue'
 import CardBox from '@/components/CardBox.vue'
@@ -17,80 +17,92 @@ import CardBoxTransaction from '@/components/CardBoxTransaction.vue'
 import CardBoxClient from '@/components/CardBoxClient.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import { useMainStore } from '@/stores/main.js'
+import { useWorkerStore } from '@/stores/workerStore'
+import { useShiftStore } from '@/stores/shiftStore'
 
 const mainStore = useMainStore()
+const workerStore = useWorkerStore()
+const shiftStore = useShiftStore()
 
-// Sample transaction data
-const transactionBarItems = computed(() => [
-  {
-    id: 1,
-    amount: 375.53,
-    date: '3 days ago',
-    business: 'Morning Shift',
-    type: 'Scheduled',
-    name: 'John Doe',
-    account: 'Engineering'
-  },
-  {
-    id: 2,
-    amount: 470.26,
-    date: '3 days ago',
-    business: 'Evening Shift',
-    type: 'Scheduled',
-    name: 'Jane Smith',
-    account: 'Marketing'
-  },
-  {
-    id: 3,
-    amount: 971.34,
-    date: '5 days ago',
-    business: 'Night Shift',
-    type: 'Completed',
-    name: 'Bob Wilson',
-    account: 'Operations'
-  },
-  {
-    id: 4,
-    amount: 374.63,
-    date: '7 days ago',
-    business: 'Weekend Shift',
-    type: 'Completed',
-    name: 'Alice Brown',
-    account: 'Customer Service'
+// Fetch data on component mount
+onMounted(async () => {
+  try {
+    await Promise.all([
+      workerStore.fetchWorkers(),
+      shiftStore.fetchShifts()
+    ])
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error)
   }
-])
+})
 
-// Sample client data
-const clientBarItems = ref([
-  {
-    id: 1,
-    name: 'John Doe',
-    login: 'john.doe',
-    date: 'Mar 3, 2025',
-    progress: 70
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    login: 'jane.smith',
-    date: 'Dec 1, 2025',
-    progress: 68
-  },
-  {
-    id: 3,
-    name: 'Bob Wilson',
-    login: 'bob.wilson',
-    date: 'May 18, 2025',
-    progress: 49
-  },
-  {
-    id: 4,
-    name: 'Alice Brown',
-    login: 'alice.brown',
-    date: 'May 4, 2025',
-    progress: 38
-  }
-])
+// Helper function to format relative dates
+const getRelativeDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+  return date.toLocaleDateString()
+}
+
+// Transform shifts to transaction format
+const transactionBarItems = computed(() => {
+  return shiftStore.shifts.slice(0, 4).map((shift, index) => {
+    const worker = workerStore.workers.find(w => w.id === shift.worker_id)
+    const startTime = new Date(shift.start_time)
+    const endTime = new Date(shift.end_time)
+    const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
+    const amount = hours * 25 // Assuming $25/hour rate
+    
+    return {
+      id: shift.id,
+      amount: parseFloat(amount.toFixed(2)),
+      date: getRelativeDate(shift.start_time),
+      business: `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      type: new Date(shift.start_time) > new Date() ? 'Scheduled' : 'Completed',
+      name: worker ? worker.name : 'Unknown',
+      account: worker ? worker.department : 'N/A'
+    }
+  })
+})
+
+// Transform workers to client format
+const clientBarItems = computed(() => {
+  return workerStore.workers.slice(0, 4).map(worker => {
+    const workerShifts = shiftStore.shifts.filter(s => s.worker_id === worker.id)
+    const totalHours = workerShifts.reduce((acc, shift) => {
+      const start = new Date(shift.start_time)
+      const end = new Date(shift.end_time)
+      return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60)
+    }, 0)
+    
+    return {
+      id: worker.id,
+      name: worker.name,
+      login: worker.email,
+      date: new Date(worker.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      progress: Math.min(Math.round((totalHours / 160) * 100), 100) // 160 hours = full month
+    }
+  })
+})
+
+// Calculate total workers count
+const totalWorkers = computed(() => workerStore.workers.length)
+
+// Calculate total hours or shifts
+const totalShifts = computed(() => shiftStore.shifts.length)
+
+// Calculate performance metric
+const performanceMetric = computed(() => {
+  const completedShifts = shiftStore.shifts.filter(s => new Date(s.end_time) < new Date()).length
+  const totalShiftsCount = shiftStore.shifts.length
+  return totalShiftsCount > 0 ? Math.round((completedShifts / totalShiftsCount) * 100) : 0
+})
 </script>
 
 <template>
@@ -109,30 +121,23 @@ const clientBarItems = ref([
 
     <div class="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
       <CardBoxWidget
-        trend="12%"
-        trend-type="up"
         color="text-emerald-500"
         :icon="mdiAccountGroup"
-        :number="512"
+        :number="totalWorkers"
         label="Workers"
       />
       <CardBoxWidget
-        trend="12%"
-        trend-type="down"
         color="text-blue-500"
-        :icon="mdiCashMultiple"
-        :number="7770"
-        prefix="$"
-        label="Sales"
+        :icon="mdiChartTimelineVariant"
+        :number="totalShifts"
+        label="Shifts"
       />
       <CardBoxWidget
-        trend="Overflow"
-        trend-type="alert"
         color="text-red-500"
-        :icon="mdiChartTimelineVariant"
-        :number="256"
+        :icon="mdiTrendingUp"
+        :number="performanceMetric"
         suffix="%"
-        label="Performance"
+        label="Completion Rate"
       />
     </div>
 

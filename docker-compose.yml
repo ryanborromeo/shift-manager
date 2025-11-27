@@ -29,6 +29,7 @@ services:
     environment:
       - DATASTORE_EMULATOR_HOST=datastore-emulator:8081
       - DATASTORE_PROJECT_ID=local-project
+      - UV_HTTP_TIMEOUT=120
     depends_on:
       datastore-emulator:
         condition: service_healthy

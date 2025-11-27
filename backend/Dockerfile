@@ -4,8 +4,12 @@ WORKDIR /app
 
 RUN pip install uv
 
-COPY pyproject.toml ./
-RUN uv pip install --system -r pyproject.toml
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies with increased timeout
+ENV UV_HTTP_TIMEOUT=120
+RUN uv sync --frozen
 
 COPY . .
 

@@ -1,16 +1,18 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 export const useDarkModeStore = defineStore('darkMode', () => {
   // Initialize from localStorage, default to true (dark mode)
-  const isEnabled = ref(
+  const isEnabled: Ref<boolean> = ref(
     typeof localStorage !== 'undefined'
       ? localStorage.getItem('darkMode') === '1' || localStorage.getItem('darkMode') === null
       : true
   )
-  const isInProgress = ref(false)
+  
+  const isInProgress: Ref<boolean> = ref(false)
 
-  function set(payload = null) {
+  function set(payload: boolean | null = null): void {
     isInProgress.value = true
     isEnabled.value = payload !== null ? payload : !isEnabled.value
 
