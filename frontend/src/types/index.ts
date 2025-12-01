@@ -33,9 +33,50 @@ export interface ShiftUpdate {
   end: string;
 }
 
-// Settings related types
-export interface TimezoneSettings {
-  timezone: string;
+// Time API related types
+export interface Offset {
+  seconds?: number;
+  milliseconds?: number;
+  ticks?: number;
+  nanoseconds?: number;
+}
+
+export interface Duration {
+  days?: number;
+  nanosecondOfDay?: number;
+  hours?: number;
+  minutes?: number;
+  seconds?: number;
+  milliseconds?: number;
+  subsecondTicks?: number;
+  subsecondNanoseconds?: number;
+  bclCompatibleTicks?: number;
+  totalDays?: number;
+  totalHours?: number;
+  totalMinutes?: number;
+  totalSeconds?: number;
+  totalMilliseconds?: number;
+  totalTicks?: number;
+  totalNanoseconds?: number;
+}
+
+export interface DstInterval {
+  dstName?: string | null;
+  dstOffsetToUtc?: Offset;
+  dstOffsetToStandardTime?: Offset;
+  dstStart?: string | null;
+  dstEnd?: string | null;
+  dstDuration?: Duration;
+}
+
+export interface TimeZoneInfo {
+  timeZone?: string | null;
+  currentLocalTime?: string;
+  currentUtcOffset?: Offset;
+  standardUtcOffset?: Offset;
+  hasDayLightSaving?: boolean;
+  isDayLightSavingActive?: boolean;
+  dstInterval?: DstInterval | null;
 }
 
 // API response types

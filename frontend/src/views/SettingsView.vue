@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { mdiCog, mdiContentSave } from '@mdi/js'
 import SectionMain from '@/components/SectionMain.vue'
 import CardBox from '@/components/CardBox.vue'
@@ -11,29 +11,59 @@ import NotificationBar from '@/components/NotificationBar.vue'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 const settingsStore = useSettingsStore()
-const timezone = ref('')
+const timezone = computed({
+  get: () => settingsStore.timezone,
+  set: (val: string) => {
+    settingsStore.timezone = val
+  }
+})
 const isSaving = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 
-// Common timezone options (IANA timezone names)
-const timezoneOptions = [
-  { id: 'UTC', label: 'UTC' },
-  { id: 'America/New_York', label: 'America/New_York (EST/EDT)' },
-  { id: 'America/Chicago', label: 'America/Chicago (CST/CDT)' },
-  { id: 'America/Denver', label: 'America/Denver (MST/MDT)' },
-  { id: 'America/Los_Angeles', label: 'America/Los_Angeles (PST/PDT)' },
-  { id: 'Europe/London', label: 'Europe/London (GMT/BST)' },
-  { id: 'Europe/Paris', label: 'Europe/Paris (CET/CEST)' },
-  { id: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
-  { id: 'Asia/Shanghai', label: 'Asia/Shanghai (CST)' },
-  { id: 'Australia/Sydney', label: 'Australia/Sydney (AEST/AEDT)' }
-]
+const timezoneOptions = computed(() =>
+  settingsStore.availableTimezones.map((tz) => ({
+    id: tz,
+    label: tz
+  }))
+)
+
+const hasTimezoneInfo = computed(() => Boolean(settingsStore.timezoneInfo))
+
+const formatUtcOffset = (offsetSeconds?: number) => {
+  if (offsetSeconds === undefined || offsetSeconds === null) return 'N/A'
+  const hours = Math.floor(Math.abs(offsetSeconds) / 3600)
+  const minutes = Math.floor((Math.abs(offsetSeconds) % 3600) / 60)
+  const sign = offsetSeconds >= 0 ? '+' : '-'
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+const formattedCurrentTime = computed(() => {
+  const current = settingsStore.timezoneInfo?.currentLocalTime
+  if (!current) return 'Unavailable'
+  try {
+    return new Date(current).toLocaleString()
+  } catch (error) {
+    return current
+  }
+})
+
+const formattedUtcOffset = computed(() => {
+  const offset = settingsStore.timezoneInfo?.currentUtcOffset?.seconds
+  return formatUtcOffset(offset)
+})
+
+const dstStatus = computed(() => {
+  const info = settingsStore.timezoneInfo
+  if (!info) return 'Unavailable'
+  if (!info.hasDayLightSaving) return 'Not observed'
+  return info.isDayLightSavingActive ? 'Active' : 'Inactive'
+})
 
 onMounted(async () => {
   try {
+    await settingsStore.fetchAvailableTimezones()
     await settingsStore.fetchTimezone()
-    timezone.value = settingsStore.timezone
   } catch (error) {
     errorMessage.value = 'Failed to load timezone settings'
     console.error('Error fetching timezone:', error)
@@ -47,12 +77,12 @@ const saveSettings = async () => {
   
   try {
     await settingsStore.updateTimezone(timezone.value)
-    successMessage.value = 'Settings saved successfully!'
+    successMessage.value = 'Timezone updated successfully!'
     setTimeout(() => {
       successMessage.value = ''
     }, 3000)
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.detail || 'Failed to save settings'
+    errorMessage.value = error.response?.data?.detail || 'Failed to update timezone'
     setTimeout(() => {
       errorMessage.value = ''
     }, 5000)
@@ -99,9 +129,34 @@ const saveSettings = async () => {
         <FormControl
           v-model="timezone"
           :options="timezoneOptions"
-          :disabled="settingsStore.loading"
+          :disabled="settingsStore.loading || !timezoneOptions.length"
         />
       </FormField>
+    </CardBox>
+
+    <CardBox
+      v-if="hasTimezoneInfo"
+      title="Timezone Details"
+      class="mb-6"
+    >
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Current Local Time</p>
+          <p class="text-lg font-semibold">{{ formattedCurrentTime }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Current UTC Offset</p>
+          <p class="text-lg font-semibold">{{ formattedUtcOffset }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Daylight Saving</p>
+          <p class="text-lg font-semibold">{{ dstStatus }}</p>
+        </div>
+        <div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Timezone Identifier</p>
+          <p class="text-lg font-semibold">{{ settingsStore.timezoneInfo?.timeZone ?? 'Unknown' }}</p>
+        </div>
+      </div>
     </CardBox>
   </SectionMain>
 </template>

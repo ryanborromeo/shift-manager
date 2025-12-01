@@ -49,6 +49,7 @@ __screenshots__/
 
 # Tooling
 .opencode/*
-openspec/*
+openspec/
+!openspec/project.md
 AGENTS.md
 LICENSE

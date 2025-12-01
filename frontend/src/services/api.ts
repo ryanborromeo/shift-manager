@@ -43,11 +43,7 @@ apiClient.interceptors.response.use(
 export const api = {
   // General
   getHealth: () => apiClient.get('health'),
-  
-  // Timezone Settings
-  getTimezone: () => apiClient.get('settings/timezone'),
-  updateTimezone: (timezone: string) => apiClient.put('settings/timezone', { timezone }),
-  
+
   // Workers
   getWorkers: () => apiClient.get('workers'),
   getWorker: (id: number) => apiClient.get(`workers/${id}`),

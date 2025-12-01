@@ -208,51 +208,6 @@ def test_delete_shift_nonexistent(mock_delete_shift):
     assert response.json()["detail"] == "Shift not found"
 
 
-@patch("app.crud.get_timezone_setting")
-@patch("app.crud.get_entity_by_id")
-def test_timezone_conversion_storage_and_retrieval(mock_get_entity, mock_get_tz):
-    from datetime import datetime, timezone
-    from app.crud import get_shift
-    
-    mock_get_tz.return_value = "America/New_York"
-    
-    mock_entity = MagicMock()
-    mock_entity.key.id = 1
-    mock_entity.__getitem__ = lambda self, key: {
-        "worker_id": 1,
-        "start_utc": datetime(2024, 2, 10, 14, 0, 0, tzinfo=timezone.utc),
-        "end_utc": datetime(2024, 2, 10, 22, 0, 0, tzinfo=timezone.utc)
-    }[key]
-    mock_get_entity.return_value = mock_entity
-    
-    shift = get_shift(1)
-    assert shift is not None
-    assert shift["start"] == "2024-02-10T09:00:00-05:00"
-    assert shift["end"] == "2024-02-10T17:00:00-05:00"
-
-
-@patch("app.crud.get_timezone_setting")
-@patch("app.crud.get_entity_by_id")
-def test_timezone_change_affects_retrieval(mock_get_entity, mock_get_tz):
-    from datetime import datetime, timezone
-    from app.crud import get_shift
-    
-    mock_entity = MagicMock()
-    mock_entity.key.id = 1
-    mock_entity.__getitem__ = lambda self, key: {
-        "worker_id": 1,
-        "start_utc": datetime(2024, 2, 10, 14, 0, 0, tzinfo=timezone.utc),
-        "end_utc": datetime(2024, 2, 10, 22, 0, 0, tzinfo=timezone.utc)
-    }[key]
-    mock_get_entity.return_value = mock_entity
-    
-    mock_get_tz.return_value = "Europe/London"
-    shift = get_shift(1)
-    assert shift is not None
-    assert shift["start"] == "2024-02-10T14:00:00+00:00"
-    assert shift["end"] == "2024-02-10T22:00:00+00:00"
-
-
 @patch("app.crud.list_entities_by_property")
 def test_multiple_shifts_per_day_non_overlapping(mock_list_entities):
     from datetime import datetime, timezone

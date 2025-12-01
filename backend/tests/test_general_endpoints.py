@@ -25,12 +25,6 @@ def test_unsupported_method_shifts():
     response = client.patch("/shifts/1")
     assert response.status_code == 405
 
-
-def test_unsupported_method_timezone():
-    response = client.post("/settings/timezone")
-    assert response.status_code == 405
-
-
 def test_invalid_content_type():
     response = client.post(
         "/workers",

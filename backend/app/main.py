@@ -3,9 +3,8 @@ from typing import List
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
-from app.models import TimezoneSettings, Worker, WorkerCreate, WorkerUpdate, ShiftResponse, ShiftCreate, ShiftUpdate
+from app.models import Worker, WorkerCreate, WorkerUpdate, ShiftResponse, ShiftCreate, ShiftUpdate
 from app.crud import (
-    get_timezone_setting, update_timezone_setting,
     list_workers, create_worker, get_worker, update_worker, delete_worker,
     list_shifts, create_shift, get_shift, update_shift, delete_shift
 )
@@ -52,59 +51,6 @@ def read_root():
 )
 def health_check():
     return {"status": "healthy"}
-
-
-@app.get(
-    "/settings/timezone",
-    tags=["Settings"],
-    summary="Get Timezone Setting",
-    description="Retrieves the current timezone setting for the shift manager",
-    responses={
-        200: {
-            "description": "Timezone setting retrieved successfully",
-            "content": {
-                "application/json": {
-                    "example": {"timezone": "America/New_York"}
-                }
-            },
-        },
-    },
-)
-def get_timezone():
-    timezone = get_timezone_setting()
-    return {"timezone": timezone}
-
-
-@app.put(
-    "/settings/timezone",
-    tags=["Settings"],
-    summary="Update Timezone Setting",
-    description="Updates the timezone setting for the shift manager. Accepts IANA timezone names (e.g., 'America/New_York', 'Europe/London')",
-    responses={
-        200: {
-            "description": "Timezone setting updated successfully",
-            "content": {
-                "application/json": {
-                    "example": {"timezone": "America/New_York"}
-                }
-            },
-        },
-        500: {
-            "description": "Internal server error",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Error updating timezone"}
-                }
-            },
-        },
-    },
-)
-def put_timezone(settings: TimezoneSettings):
-    try:
-        timezone = update_timezone_setting(settings.timezone)
-        return {"timezone": timezone}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get(

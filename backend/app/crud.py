@@ -1,22 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List
-from zoneinfo import ZoneInfo
-from app.db import get_entity, put_entity, list_entities, get_entity_by_id, put_entity_with_auto_id, delete_entity, update_entity_by_id, list_entities_by_property
-
-
-DEFAULT_TIMEZONE = "UTC"
-
-
-def get_timezone_setting() -> str:
-    entity = get_entity("Settings", "timezone")
-    if entity is None:
-        return DEFAULT_TIMEZONE
-    return entity.get("timezone", DEFAULT_TIMEZONE)
-
-
-def update_timezone_setting(timezone: str) -> str:
-    put_entity("Settings", "timezone", {"timezone": timezone})
-    return timezone
+from app.db import list_entities, get_entity_by_id, put_entity_with_auto_id, delete_entity, update_entity_by_id, list_entities_by_property
 
 
 def list_workers():
@@ -53,13 +37,9 @@ def delete_worker(worker_id: int) -> Optional[bool]:
 
 def to_utc(iso_string: str) -> datetime:
     dt = datetime.fromisoformat(iso_string)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
-
-
-def from_utc(dt_utc: datetime, tz_name: str) -> str:
-    tz = ZoneInfo(tz_name)
-    dt_local = dt_utc.astimezone(tz)
-    return dt_local.isoformat()
 
 
 def validate_worker_exists(worker_id: int) -> bool:
@@ -81,13 +61,12 @@ def check_shift_overlap(worker_id: int, start_utc: datetime, end_utc: datetime, 
 
 def list_shifts() -> List[dict]:
     entities = list_entities("Shift")
-    timezone_setting = get_timezone_setting()
     return [
         {
             "id": entity.key.id,
             "worker_id": entity["worker_id"],
-            "start": from_utc(entity["start_utc"], timezone_setting),
-            "end": from_utc(entity["end_utc"], timezone_setting)
+            "start": entity["start_utc"].isoformat(),
+            "end": entity["end_utc"].isoformat()
         }
         for entity in entities
     ]
@@ -109,12 +88,11 @@ def create_shift(worker_id: int, start: str, end: str) -> dict:
         "end_utc": end_utc
     })
     
-    timezone_setting = get_timezone_setting()
     return {
         "id": entity.key.id,
         "worker_id": entity["worker_id"],
-        "start": from_utc(entity["start_utc"], timezone_setting),
-        "end": from_utc(entity["end_utc"], timezone_setting)
+        "start": entity["start_utc"].isoformat(),
+        "end": entity["end_utc"].isoformat()
     }
 
 
@@ -122,13 +100,12 @@ def get_shift(shift_id: int) -> Optional[dict]:
     entity = get_entity_by_id("Shift", shift_id)
     if entity is None:
         return None
-    
-    timezone_setting = get_timezone_setting()
+
     return {
         "id": entity.key.id,
         "worker_id": entity["worker_id"],
-        "start": from_utc(entity["start_utc"], timezone_setting),
-        "end": from_utc(entity["end_utc"], timezone_setting)
+        "start": entity["start_utc"].isoformat(),
+        "end": entity["end_utc"].isoformat()
     }
 
 
@@ -155,12 +132,11 @@ def update_shift(shift_id: int, worker_id: int, start: str, end: str) -> Optiona
     if updated_entity is None:
         return None
     
-    timezone_setting = get_timezone_setting()
     return {
         "id": updated_entity.key.id,
         "worker_id": updated_entity["worker_id"],
-        "start": from_utc(updated_entity["start_utc"], timezone_setting),
-        "end": from_utc(updated_entity["end_utc"], timezone_setting)
+        "start": updated_entity["start_utc"].isoformat(),
+        "end": updated_entity["end_utc"].isoformat()
     }
 
 
