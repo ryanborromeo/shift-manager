@@ -8,7 +8,7 @@ const apiClient = axios.create({
     'Accept': 'application/json',
   },
   maxRedirects: 5, // Allow following redirects
-  validateStatus: status => status >= 200 && status < 500, // Accept 2xx, 3xx, and 4xx status codes
+  validateStatus: status => status >= 200 && status < 300, // Only accept 2xx status codes
 });
 
 // Request interceptor for adding auth token if available
