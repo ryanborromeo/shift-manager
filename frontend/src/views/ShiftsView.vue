@@ -12,11 +12,13 @@ import FormField from '@/components/FormField.vue'
 import NotificationBar from '@/components/NotificationBar.vue'
 import { useShiftStore } from '@/stores/shiftStore'
 import { useWorkerStore } from '@/stores/workerStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import type { Shift } from '@/types'
 
 const searchQuery = ref('')
 const shiftStore = useShiftStore()
 const workerStore = useWorkerStore()
+const settingsStore = useSettingsStore()
 const isModalActive = ref(false)
 const isDeleteModalActive = ref(false)
 const modalMode = ref<'create' | 'edit'>('create')
@@ -34,32 +36,44 @@ onMounted(async () => {
   try {
     await Promise.all([
       shiftStore.fetchShifts(),
-      workerStore.fetchWorkers()
+      workerStore.fetchWorkers(),
+      settingsStore.fetchTimezone()
     ])
   } catch (error) {
     console.error('Error fetching shifts:', error)
   }
 })
 
-// Helper function to format date
+// Helper function to format date using preferred timezone
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString()
+  return new Date(dateString).toLocaleDateString(undefined, {
+    timeZone: settingsStore.timezone
+  })
 }
 
-// Helper function to format time
+// Helper function to format time using preferred timezone
 const formatTime = (dateString: string) => {
-  return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return new Date(dateString).toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: settingsStore.timezone
+  })
 }
 
-// Format datetime for input field (ISO 8601 local format)
+// Format datetime for input field using preferred timezone
 const formatDateTimeForInput = (dateString: string) => {
   const date = new Date(dateString)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
+  const formatter = new Intl.DateTimeFormat('sv-SE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: settingsStore.timezone
+  })
+  // Format returns "YYYY-MM-DD HH:MM", convert to "YYYY-MM-DDTHH:MM"
+  return formatter.format(date).replace(' ', 'T')
 }
 
 // Get worker name by ID
@@ -304,14 +318,6 @@ const handleDelete = async () => {
       <FormField label="Start Date & Time" help="When does the shift start?">
         <FormControl
           v-model="shiftForm.start"
-          type="datetime-local"
-          required
-        />
-      </FormField>
-
-      <FormField label="End Date & Time" help="When does the shift end?">
-        <FormControl
-          v-model="shiftForm.end"
           type="datetime-local"
           required
         />

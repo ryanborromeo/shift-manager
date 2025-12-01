@@ -154,7 +154,7 @@ const saveSettings = async () => {
         </div>
         <div>
           <p class="text-sm text-gray-500 dark:text-gray-400">Timezone Identifier</p>
-          <p class="text-lg font-semibold">{{ settingsStore.timezoneInfo?.timeZone ?? 'Unknown' }}</p>
+          <p class="text-lg font-semibold">{{ settingsStore.timezoneInfo?.timezone ?? 'Unknown' }}</p>
         </div>
       </div>
     </CardBox>

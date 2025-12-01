@@ -112,6 +112,12 @@ def to_utc(iso_string: str) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+def localize_dt(dt_utc: datetime) -> str:
+    """Convert a UTC datetime to the stored preferred timezone and return ISO string."""
+    tz = ZoneInfo(get_stored_timezone())
+    return dt_utc.astimezone(tz).isoformat()
+
+
 def validate_worker_exists(worker_id: int) -> bool:
     entity = get_entity_by_id("Worker", worker_id)
     return entity is not None
@@ -135,8 +141,8 @@ def list_shifts() -> List[dict]:
         {
             "id": entity.key.id,
             "worker_id": entity["worker_id"],
-            "start": entity["start_utc"].isoformat(),
-            "end": entity["end_utc"].isoformat()
+            "start": localize_dt(entity["start_utc"]),
+            "end": localize_dt(entity["end_utc"])
         }
         for entity in entities
     ]
@@ -161,8 +167,8 @@ def create_shift(worker_id: int, start: str, end: str) -> dict:
     return {
         "id": entity.key.id,
         "worker_id": entity["worker_id"],
-        "start": entity["start_utc"].isoformat(),
-        "end": entity["end_utc"].isoformat()
+        "start": localize_dt(entity["start_utc"]),
+        "end": localize_dt(entity["end_utc"])
     }
 
 
@@ -174,8 +180,8 @@ def get_shift(shift_id: int) -> Optional[dict]:
     return {
         "id": entity.key.id,
         "worker_id": entity["worker_id"],
-        "start": entity["start_utc"].isoformat(),
-        "end": entity["end_utc"].isoformat()
+        "start": localize_dt(entity["start_utc"]),
+        "end": localize_dt(entity["end_utc"])
     }
 
 
@@ -205,8 +211,8 @@ def update_shift(shift_id: int, worker_id: int, start: str, end: str) -> Optiona
     return {
         "id": updated_entity.key.id,
         "worker_id": updated_entity["worker_id"],
-        "start": updated_entity["start_utc"].isoformat(),
-        "end": updated_entity["end_utc"].isoformat()
+        "start": localize_dt(updated_entity["start_utc"]),
+        "end": localize_dt(updated_entity["end_utc"])
     }
 
 
