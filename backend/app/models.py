@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator, computed_field
 
 
@@ -147,3 +147,26 @@ class ShiftResponse(BaseModel):
         start_dt = datetime.fromisoformat(self.start)
         end_dt = datetime.fromisoformat(self.end)
         return (end_dt - start_dt).total_seconds() / 3600
+
+
+# Timezone related models
+class TimezoneOffset(BaseModel):
+    seconds: int = Field(..., description="Offset from UTC in seconds", examples=[3600])
+    milliseconds: int = Field(..., description="Offset from UTC in milliseconds", examples=[3600000])
+
+
+class TimezoneInfo(BaseModel):
+    timezone: str = Field(..., description="IANA timezone identifier", examples=["America/New_York"])
+    currentLocalTime: str = Field(..., description="Current local time in ISO 8601 format", examples=["2024-02-10T14:30:00"])
+    currentUtcOffset: TimezoneOffset = Field(..., description="Current UTC offset")
+    standardUtcOffset: TimezoneOffset = Field(..., description="Standard (non-DST) UTC offset")
+    hasDayLightSaving: bool = Field(..., description="Whether the timezone observes DST")
+    isDayLightSavingActive: bool = Field(..., description="Whether DST is currently active")
+
+
+class TimezoneUpdate(BaseModel):
+    timezone: str = Field(..., description="IANA timezone identifier to set", examples=["America/New_York"])
+
+
+class AvailableTimezonesResponse(BaseModel):
+    timezones: List[str] = Field(..., description="List of available IANA timezone identifiers")

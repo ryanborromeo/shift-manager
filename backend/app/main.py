@@ -3,10 +3,14 @@ from typing import List
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
-from app.models import Worker, WorkerCreate, WorkerUpdate, ShiftResponse, ShiftCreate, ShiftUpdate
+from app.models import (
+    Worker, WorkerCreate, WorkerUpdate, ShiftResponse, ShiftCreate, ShiftUpdate,
+    TimezoneInfo, TimezoneUpdate
+)
 from app.crud import (
     list_workers, create_worker, get_worker, update_worker, delete_worker,
-    list_shifts, create_shift, get_shift, update_shift, delete_shift
+    list_shifts, create_shift, get_shift, update_shift, delete_shift,
+    get_available_timezones, is_valid_timezone, get_timezone_info, get_stored_timezone, set_stored_timezone
 )
 
 ENV = os.getenv("ENV", "development")
@@ -374,3 +378,95 @@ def delete_shift_by_id(shift_id: int):
     if result is None:
         raise HTTPException(status_code=404, detail="Shift not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.get(
+    "/settings/timezone",
+    response_model=TimezoneInfo,
+    tags=["Settings"],
+    summary="Get Current Timezone",
+    description="Returns the currently configured timezone with metadata including offset and DST information",
+    responses={
+        200: {
+            "description": "Timezone information retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "timezone": "America/New_York",
+                        "currentLocalTime": "2024-02-10T14:30:00",
+                        "currentUtcOffset": {"seconds": -18000, "milliseconds": -18000000},
+                        "standardUtcOffset": {"seconds": -18000, "milliseconds": -18000000},
+                        "hasDayLightSaving": True,
+                        "isDayLightSavingActive": False
+                    }
+                }
+            },
+        },
+    },
+)
+def get_timezone():
+    tz = get_stored_timezone()
+    return get_timezone_info(tz)
+
+
+@app.put(
+    "/settings/timezone",
+    response_model=TimezoneInfo,
+    tags=["Settings"],
+    summary="Update Timezone",
+    description="Updates the preferred timezone. Validates against available IANA timezone identifiers.",
+    responses={
+        200: {
+            "description": "Timezone updated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "timezone": "Europe/London",
+                        "currentLocalTime": "2024-02-10T19:30:00",
+                        "currentUtcOffset": {"seconds": 0, "milliseconds": 0},
+                        "standardUtcOffset": {"seconds": 0, "milliseconds": 0},
+                        "hasDayLightSaving": True,
+                        "isDayLightSavingActive": False
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "Invalid timezone identifier",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid timezone identifier: Invalid/Zone"}
+                }
+            },
+        },
+    },
+)
+def put_timezone(payload: TimezoneUpdate):
+    if not is_valid_timezone(payload.timezone):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid timezone identifier: {payload.timezone}"
+        )
+    set_stored_timezone(payload.timezone)
+    return get_timezone_info(payload.timezone)
+
+
+@app.get(
+    "/settings/timezones",
+    response_model=List[str],
+    tags=["Settings"],
+    summary="List Available Timezones",
+    description="Returns a list of all available IANA timezone identifiers",
+    responses={
+        200: {
+            "description": "List of available timezones",
+            "content": {
+                "application/json": {
+                    "example": ["Africa/Abidjan", "Africa/Accra", "America/New_York", "Europe/London"]
+                }
+            },
+        },
+    },
+)
+def list_timezones():
+    return get_available_timezones()

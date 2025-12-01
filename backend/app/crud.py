@@ -1,6 +1,76 @@
 from datetime import datetime, timezone
 from typing import Optional, List
-from app.db import list_entities, get_entity_by_id, put_entity_with_auto_id, delete_entity, update_entity_by_id, list_entities_by_property
+from zoneinfo import ZoneInfo, available_timezones
+from app.db import list_entities, get_entity_by_id, put_entity_with_auto_id, delete_entity, update_entity_by_id, list_entities_by_property, get_entity, put_entity
+
+DEFAULT_TIMEZONE = "Etc/UTC"
+
+# Cache for available timezones (computed once at module load)
+_available_timezones_cache: Optional[List[str]] = None
+
+
+def get_available_timezones() -> List[str]:
+    """Return sorted list of available IANA timezone identifiers."""
+    global _available_timezones_cache
+    if _available_timezones_cache is None:
+        _available_timezones_cache = sorted(available_timezones())
+    return _available_timezones_cache
+
+
+def is_valid_timezone(tz: str) -> bool:
+    """Check if a timezone identifier is valid."""
+    return tz in get_available_timezones()
+
+
+def get_timezone_info(tz: str) -> dict:
+    """Build timezone metadata for a given IANA timezone identifier."""
+    zone = ZoneInfo(tz)
+    now = datetime.now(zone)
+    
+    # Get current offset
+    utc_offset = now.utcoffset()
+    offset_seconds = int(utc_offset.total_seconds()) if utc_offset else 0
+    
+    # Get standard offset (January 1st to avoid DST in most zones)
+    jan_1 = datetime(now.year, 1, 1, 12, 0, 0, tzinfo=zone)
+    std_offset = jan_1.utcoffset()
+    std_offset_seconds = int(std_offset.total_seconds()) if std_offset else 0
+    
+    # Determine DST status
+    dst = now.dst()
+    has_dst = dst is not None and dst.total_seconds() != 0 or offset_seconds != std_offset_seconds
+    is_dst_active = dst is not None and dst.total_seconds() > 0
+    
+    return {
+        "timezone": tz,
+        "currentLocalTime": now.strftime("%Y-%m-%dT%H:%M:%S"),
+        "currentUtcOffset": {
+            "seconds": offset_seconds,
+            "milliseconds": offset_seconds * 1000,
+        },
+        "standardUtcOffset": {
+            "seconds": std_offset_seconds,
+            "milliseconds": std_offset_seconds * 1000,
+        },
+        "hasDayLightSaving": has_dst,
+        "isDayLightSavingActive": is_dst_active,
+    }
+
+
+def get_stored_timezone() -> str:
+    """Retrieve the stored timezone from Datastore, defaulting to Etc/UTC."""
+    entity = get_entity("Settings", "timezone")
+    if entity is None:
+        # Persist default and return
+        put_entity("Settings", "timezone", {"value": DEFAULT_TIMEZONE})
+        return DEFAULT_TIMEZONE
+    return entity.get("value", DEFAULT_TIMEZONE)
+
+
+def set_stored_timezone(tz: str) -> str:
+    """Persist the selected timezone to Datastore."""
+    put_entity("Settings", "timezone", {"value": tz})
+    return tz
 
 
 def list_workers():

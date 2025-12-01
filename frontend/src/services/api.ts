@@ -57,6 +57,11 @@ export const api = {
   createShift: (shiftData: any) => apiClient.post('shifts', shiftData),
   updateShift: (id: number, shiftData: any) => apiClient.put(`shifts/${id}`, shiftData),
   deleteShift: (id: number) => apiClient.delete(`shifts/${id}`),
+
+  // Settings / Timezone
+  getTimezone: () => apiClient.get('settings/timezone'),
+  updateTimezone: (timezone: string) => apiClient.put('settings/timezone', { timezone }),
+  getAvailableTimezones: () => apiClient.get<string[]>('settings/timezones'),
 };
 
 export default api;

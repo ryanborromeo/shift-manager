@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { timeApi } from '@/services/timeApi';
+import { api } from '@/services/api';
 import type { TimeZoneInfo } from '@/types';
 
 const DEFAULT_TIMEZONE = 'Etc/UTC';
@@ -18,7 +18,7 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       return await fn();
     } catch (err: any) {
-      error.value = err.response?.data?.detail || err.message || 'Unexpected error communicating with Time API';
+      error.value = err.response?.data?.detail || err.message || 'Unexpected error communicating with backend';
       throw err;
     } finally {
       loading.value = false;
@@ -27,7 +27,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const fetchAvailableTimezones = () =>
     withRequest(async () => {
-      const response = await timeApi.getAvailableTimezones();
+      const response = await api.getAvailableTimezones();
       availableTimezones.value = response.data;
       if (!availableTimezones.value.includes(timezone.value)) {
         timezone.value = availableTimezones.value[0] ?? DEFAULT_TIMEZONE;
@@ -35,22 +35,21 @@ export const useSettingsStore = defineStore('settings', () => {
       return availableTimezones.value;
     });
 
-  const fetchTimezone = (targetTimezone?: string) =>
+  const fetchTimezone = () =>
     withRequest(async () => {
-      const tz = targetTimezone || timezone.value || DEFAULT_TIMEZONE;
-      if (!tz) {
-        throw new Error('Timezone is required');
-      }
-      const response = await timeApi.getTimezoneInfo(tz);
-      timezone.value = tz;
+      const response = await api.getTimezone();
+      timezone.value = response.data.timezone;
       timezoneInfo.value = response.data;
       return response.data;
     });
 
-  const updateTimezone = async (newTimezone: string) => {
-    const data = await fetchTimezone(newTimezone);
-    return { timezone: timezone.value, info: data };
-  };
+  const updateTimezone = async (newTimezone: string) =>
+    withRequest(async () => {
+      const response = await api.updateTimezone(newTimezone);
+      timezone.value = response.data.timezone;
+      timezoneInfo.value = response.data;
+      return { timezone: timezone.value, info: response.data };
+    });
 
   return {
     timezone,
